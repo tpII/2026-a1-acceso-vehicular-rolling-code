@@ -64,5 +64,23 @@
 
    - Analizar las opciones y elegir la más eficiente. 
 
-   - Finalizar el plan de proyecto y realizar el video de presentación. 
+   - Finalizar el plan de proyecto y realizar el video de presentación.
+
+ #### **Fecha 12/09/2026** 
+
+- Qué se hizo? 
+
+
+
+   - Se analizaron las opciones para la implementación del cambio de modulación, teniendo en cuenta factores como la eficiencia energética, la latencia de respuesta y la complejidad de realización.
+   - Se realizaron las diapositivas para la presentación del proyecto y se grabó el video correspondiente.
+   - Se entregó el plan de proyecto a traves de Ideas.
+
+- Decisión tomada 
+
+   -  Para comunicar el cambio de modulación se eligó la opción de una ventana de escucha ACK en el emisor luego de la transmisión. 
+
+- Próximo paso 
+
+   - Esperar la entrega de los componentes de hardware para comenzar a implementar el proyecto.
 
