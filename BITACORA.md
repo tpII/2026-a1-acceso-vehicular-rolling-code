@@ -108,5 +108,5 @@
 
 - Próximo paso 
 
-   - Iniciar el desarrollo del frontend de la plataforma web y la estructura de pruebas unitarias.
+   - Iniciar en un principio con lo que es el desarrollo web y de manera secundaria la estructura de pruebas unitarias.
 
