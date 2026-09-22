@@ -127,3 +127,34 @@
 
    - Analizar las soluciones para implementar el interceptor y elegir entre ellas.
 
+ #### **Fecha 22/09/2026** 
+
+- Qué se hizo? 
+   - Se analizaron y evaluaron distintas tecnologías para el desarrollo de la interfaz, considerando el uso de frameworks como React o Vue.
+
+   - Se maquetaron las vistas principales respetando la estructura de los wireframes, incorporando el panel de estado, métricas y registros de auditoría.
+
+   - Se comenzó con la implementación del frontend de la plataforma web.
+ 
+- Decisión tomada 
+   
+   - Se decidió utilizar HTML5, CSS3 y JavaScript de forma directa sin implementar frameworks pesados.
+
+   - Esta opción se consideró la más ágil y simple para esta etapa del proyecto, ya que elimina la complejidad de empaquetado.
+
+   - Se acordó que, en caso de disponer de tiempo adicional en el futuro, se evaluará la migración a un framework como React para escalar el proyecto.
+
+- Próximo paso 
+   - Comenzar con el desarrollo del backend en Python.
+
+   - Estructurar el servidor local para la recepción de eventos y preparar la comunicación en mediante WebSockets.
+
+<div align="center">
+  <img src="./Web/frontend/image.png" alt="Captura del panel de inicio">
+  <p><em>Figura 1: Vista principal del panel de monitoreo y estado de seguridad.</em></p>
+</div>
+
+<div align="center">
+  <img src="./Web/frontend/image-1.png" alt="Captura del panel de inicio">
+  <p><em>Figura 2: Vista de la tabla de registros.</em></p>
+</div>
