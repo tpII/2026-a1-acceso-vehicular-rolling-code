@@ -110,3 +110,20 @@
 
    - Iniciar en un principio con lo que es el desarrollo web y de manera secundaria la estructura de pruebas unitarias.
 
+ #### **Fecha 21/09/2026** 
+
+- Qué se hizo? 
+
+   - Se investigaron y analizaron distintas propuestas para reestructurar el proyecto en base a los materiales asignados por la catedra(2 arduino UNO, 1 esp32, 2 cc1101, 1 servo y 1 fuente alimentación). El principal desafío fue encontrar una solución para implementar el nodo interceptor sin un transceptor cc1101.
+   - Documentación: [Análisis de componentes asignados](https://docs.google.com/document/d/149fhd8uxdqXGCKvHql11_JB6_TIA2iZjkLbXKHnm_U8/edit?usp=sharing)
+
+- Decisión tomada 
+
+   - Se decidió utilzar el esp32 para el nodo receptor y los 2 arduinos UNO para los nodos emisor e interceptor.
+   - Los 2 transceptores cc1101 se utilizarán en los nodos emisor y receptor.
+   - Se encontraron y listaron algunas soluciones para la implementación del nodo interceptor, las cuales se encuentran en este documento [link](https://docs.google.com/document/d/1W8DgCcCBv0kgthI1AKxEsXmWdtwS-Hq3AYD4_JGeEIY/edit?usp=sharing) 
+
+- Próximo paso 
+
+   - Analizar las soluciones para implementar el interceptor y elegir entre ellas.
+
