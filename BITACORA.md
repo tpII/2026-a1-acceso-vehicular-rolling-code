@@ -158,3 +158,33 @@
   <img src="./Web/frontend/image-1.png" alt="Captura del panel de inicio">
   <p><em>Figura 2: Vista de la tabla de registros.</em></p>
 </div>
+
+#### **Fecha 26/09/2026** 
+
+- Qué se hizo? 
+
+   - En primer lugar se investigaron las distintas plataformas de desarrollo para microcontroladores ESP8266, ESP32 y Arduino (PlatformIO y ArduinoIDE).
+
+   - Luego se desarrollaron los códigos base y las configuraciones iniciales tanto para el nodo emisor (node_emisor) como para el nodo receptor (node_receptor).
+
+   - Se puedo testear y verificar con éxito la compilación del entorno con los códigos iniciales, asegurando el empaquetado exacto de la trama de 16 bytes y las librerías criptográficas, aunque aún resta probar su funcionamiento directo sobre HW físico.
+
+   - Se estructuró e integró la carpeta de firmware dentro del repositorio, creando una rama de trabajo aislada llamada 'Prueba' para resguardar la rama main. Para asi poder probar y testear código de manera independiente.
+
+- Decisión tomada 
+
+   - Se optó por PlatformIO ya que resulta ser mucho más flexible que el IDE tradicional de Arduino para manejar múltiples arquitecturas en un mismo workspace.
+   - Se optó por desarrollar el código base estructurando los entornos por separado y utilizando un diseño modular para garantizar la sincronización de las comunicaciones y la gestión de ventanas de códigos rodantes.
+
+- Problemas encontrados y solución
+   - Incompatibilidad con los includes y headers de la librería CC1101: Inicialmente se pensaba que la librería del transceptor podía manejarse con la inclusión genérica estándar, pero al revisar el sitio oficial de platformIO (https://registry.platformio.org/libraries/lsatan/SmartRC-CC1101-Driver-Lib), se constató que requiere una directiva y un archivo de compatibilidad específicos.
+      -  Solución: Se ajustaron los includes en el código utilizando la estructura requerida por el driver oficial:
+         - #include <SmartRC_CC1101.h>
+         - #include "ELECHOUSE_CC1101_SRC_DRV.h>
+
+- Próximo paso 
+
+   - Recibir los componentes físicos del kit
+   - Ensamblar la arquitectura
+   - Probar el código inicial compilado directamente en el HW
+   - Corregir posibles errores de integración y continuar con el desarrollo y calibración de la lógica de radiofrecuencia ya contando con los nodos.
