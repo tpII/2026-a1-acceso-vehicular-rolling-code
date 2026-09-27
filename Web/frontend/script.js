@@ -1,5 +1,5 @@
 // ============================================================
-// CONFIGURACIÓN: cambiá esta URL si el backend corre en otra
+// Esta URL debemos cambiarlasi el backend corre en otra
 // máquina o puerto (por ejemplo, la IP de la notebook en la demo,
 // tipo "http://192.168.0.15:5000").
 // ============================================================
@@ -55,7 +55,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (panelGlobal) {
                         if (!datos.sistema_seguro) {
                             panelGlobal.classList.add("alert-mode");
-                            //alert("¡ALERTA! Intento de Replay Attack detectado.");
                         } else {
                             panelGlobal.classList.remove("alert-mode");
                         }
@@ -72,7 +71,6 @@ document.addEventListener("DOMContentLoaded", () => {
             fetch(`${BACKEND_URL}/api/tramas/${endpoint}`)
                 .then((r) => r.json())
                 .then((tramas) => {
-                    tbody.innerHTML = ""; // Limpia los ejemplos quemados en el HTML
                     tramas.forEach((t) => {
                         const esAceptado = t.resultado === "aceptado";
                         const claseBadge = esAceptado ? "success" : "danger";
@@ -98,9 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
             actualizarTramas("ook", "tbody-ook");
         }
 		
-		
         refrescarInicio();
-        //setInterval(refrescarInicio, 3000); // refresco automático, útil para la demo en vivo
     }
 
 
@@ -155,7 +151,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (filterInput) filterInput.addEventListener("input", aplicarFiltro);
 
         cargarLogs();
-        //setInterval(cargarLogs, 3000);
     }
 	
 	// ==========================================

@@ -1,6 +1,6 @@
 """
 Simula al receptor (ESP32) mandando eventos al backend, para poder
-probar el frontend de punta a punta ANTES de tener el firmware real
+probar el frontend ANTES de tener el firmware real
 listo. No reemplaza al ESP32: es solo una herramienta de desarrollo.
 
 Como usarlo (con app.py ya corriendo en otra terminal):

@@ -4,11 +4,14 @@ Flask + SQLite, pensado para correr localmente en la misma red que
 el receptor (ESP32) y la compu donde se abre el frontend.
 
 Como correrlo:
-    pip install -r requirements.txt
+    pip install flask
+    pip install flask-cors
+    pip install requests
+    pip install flask-socketio
     python app.py
 
 Por defecto queda escuchando en http://0.0.0.0:5000 (puerto 5000).
-Para probarlo sin el ESP32 todavia, usa simulador.py en otra terminal.
+Para probarlo sin el ESP32 debemos usar el simulador.py en otra terminal.
 """
 import sqlite3
 from datetime import datetime, date
