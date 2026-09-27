@@ -50,32 +50,14 @@
                                 <th>Fecha y hora</th>
                                 <th>ID del llavero</th>
                                 <th>Contador recibido</th>
+								<th>Modulación</th>
+                                <th>Trama (Hex)</th>
                                 <th>Tipo de ataque</th>
                                 <th>Acción del sistema</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>21/09/2026 12:34:12</td>
-                                <td class="mono">0x01A4</td>
-                                <td class="mono">0x3F2A</td>
-                                <td>Ninguno</td>
-                                <td><span class="status-text success">Acceso permitido</span></td>
-                            </tr>
-                            <tr>
-                                <td>21/09/2026 12:33:58</td>
-                                <td class="mono">0x01A4</td>
-                                <td class="mono">0x3F20</td>
-                                <td>Replay</td>
-                                <td><span class="status-text danger">Trama rechazada</span></td>
-                            </tr>
-                            <tr>
-                                <td>21/09/2026 12:32:41</td>
-                                <td class="mono">0x01A4</td>
-                                <td class="mono">0x3F10</td>
-                                <td>Replay</td>
-                                <td><span class="status-text danger">Trama rechazada</span></td>
-                            </tr>
+                        <tbody id="logs-tbody">
+                            <!-- El historial se inyecta dinámicamente desde la base de datos -->
                         </tbody>
                     </table>
                 </div>
@@ -83,6 +65,7 @@
             </div>
         </main>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

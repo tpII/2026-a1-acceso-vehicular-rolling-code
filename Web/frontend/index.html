@@ -44,8 +44,8 @@
                         </div>
                         <div class="status-texts">
                             <span class="status-tag">Estado global del sistema</span>
-                            <h2 class="status-heading">Sistema seguro</h2>
-                            <p class="status-desc">No se detectaron ataques. El sistema se encuentra operando correctamente.</p>
+                            <h2 class="status-heading" id="status-heading">Sistema seguro</h2>
+                            <p class="status-desc" id="status-desc">No se detectaron ataques. El sistema se encuentra operando correctamente.</p>
                         </div>
                     </div>
                     
@@ -68,7 +68,7 @@
                 <section class="metrics-grid">
                     <div class="metric-card">
                         <span class="metric-title">Contador actual</span>
-                        <span class="metric-value">0x3F2A</span>
+                        <span class="metric-value" id="metric-contador">0x3F2A</span>
                     </div>
                     <div class="metric-card">
                         <span class="metric-title">Modulación actual</span>
@@ -76,7 +76,7 @@
                     </div>
                     <div class="metric-card">
                         <span class="metric-title">Cantidad de ataques rechazados hoy</span>
-                        <span class="metric-value">2</span>
+                        <span class="metric-value" id="metric-ataques">2</span>
                     </div>
                 </section>
 				
@@ -104,36 +104,48 @@
                 <!-- Tramas 2-FSK -->
                 <section class="panel frames-panel">
                     <h3 class="panel-title">Tramas de la modulación 2-FSK</h3>
-                    <div class="terminal">
-                        <div class="frame-entry">
-                            <span class="time">12:34:12</span>
-                            <span class="data">A3 F4 9C 2E 7B 1D 4F 20</span>
-                        </div>
-                        <div class="frame-entry">
-                            <span class="time">12:34:08</span>
-                            <span class="data">A3 F4 9C 2E 7B 1D 4F 21</span>
-                        </div>
-                    </div>
+                    <div class="panel table-container">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Trama(hex)</th>
+                                <th>RSSI(dBm)</th>
+                                <th>Resultado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-2fsk">
+                           <!-- Las tramas en vivo se inyectan dinámicamente desde Python -->
+                        </tbody>
+                    </table>
+                </div>
                 </section>
+				
+				
 
                 <!-- Tramas ASK/OOK -->
                 <section class="panel frames-panel">
                     <h3 class="panel-title">Tramas de la modulación ASK/OOK</h3>
-                    <div class="terminal">
-                        <div class="frame-entry">
-                            <span class="time">12:33:45</span>
-                            <span class="data">D1 7A 4B 9C 3F 2E 10 05</span>
-                        </div>
-                        <div class="frame-entry">
-                            <span class="time">12:33:40</span>
-                            <span class="data">D1 7A 4B 9C 3F 2E 10 06</span>
-                        </div>
-                    </div>
+                    <div class="panel table-container">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Trama(hex)</th>
+                                <th>RSSI(dBm)</th>
+                                <th>Resultado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-ook">
+                            <!-- Las tramas en vivo se inyectan dinámicamente desde Python -->
+                        </tbody>
+                    </table>
+                </div>
                 </section>
-
             </div>
         </main>
     </div>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

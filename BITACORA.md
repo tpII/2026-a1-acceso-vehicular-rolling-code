@@ -150,14 +150,67 @@
    - Estructurar el servidor local para la recepción de eventos y preparar la comunicación en mediante WebSockets.
 
 <div align="center">
-  <img src="./Web/frontend/image.png" alt="Captura del panel de inicio">
+  <img src="./Web/frontend/img/image.png" alt="Captura del panel de inicio">
   <p><em>Figura 1: Vista principal del panel de monitoreo y estado de seguridad.</em></p>
 </div>
 
 <div align="center">
-  <img src="./Web/frontend/image-1.png" alt="Captura del panel de inicio">
+  <img src="./Web/frontend/img/image-1.png" alt="Captura del panel de inicio">
   <p><em>Figura 2: Vista de la tabla de registros.</em></p>
 </div>
+
+ #### **Fecha 25/09/2026** 
+- Qué se hizo?
+
+   -  Implementación completa de la arquitectura del backend local utilizando Python y Flask.
+
+   - Configuración de la base de datos relacional con SQLite para el almacenamiento persistente del historial de eventos,id del llavero, contador, tramas, rssi, contadores y tipos de ataque.
+
+   - Desarrollo de la comunicación bidireccional integrando la librería Flask-SocketIO para conectar el servidor directamente con la interfaz web.
+
+   - Desarrollo del script simulador.py. Este código se encarga de enviar datos crudos (tramas, modulación y la acción del sistema) hacia el backend para testear que la comunicación funcione y ver cómo se llenan las tablas de la interfaz automáticamente.
+
+   - Se rediseñó la estructura de la tabla en la vista de Logs. Se añadieron las columnas "Trama (Hex)" y "Modulación", solucionando la imposibilidad previa de rastrear la trama exacta de un registro pasado.
+
+   - Se rediseñó la estructura de la tabla en la vista de Inicio. Se añadieron las columnas RSSI(dBm) y Resultado para tener mas informacion de esa trama y que paso con ella, si fue aceptada o rechazada.
+
+   - Limpieza de las vistas HTML, borrando todos los datos estáticos de prueba que estaban en los <tbody> para que la página dependa 100% de la información del servidor.
+
+- Decisión tomada
+
+   - Se consideró y evaluó utilizar peticiones HTTP asincrónicas para actualizar los datos de la página web. Sin embargo, se decidió implementar WebSockets porque los cambios visuales en el panel se ven mucho más fluidos. Además, a nivel de red, evita saturar el procesamiento del sistema al eliminar la necesidad de consultar la base de datos constantemente.
+
+   - Se definió un comportamiento visual de alerta en el frontend: cuando el sistema detecta un Replay Attack (inyectado ahora mediante el simulador), la pantalla del dashboard se pone de color rojo para evidenciar la vulneración.
+
+- Próximo paso 
+   - Arrancar con el desarrollo del firmware en C++ para el ESP32 receptor usando el entorno PlatformIO.
+
+   - Estructurar la librería mbedtls para el descifrado AES-128 y programar la máquina de estados que va a atajar las cuatro zonas del Rolling Code (Ataque, Tolerancia, Resincronización Lógica y Resincronización Física).
+
+   <div align="center">
+   <img src="./Web/frontend/img/pantallaDeInicio.png" alt="Captura del panel de inicio">
+   <p><em>Figura 1: Pantalla de inicio con las tablas rediseñadas.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/frontend/img/pantallaDeInicioAttackReplay.png" alt="Captura del panel de inicio">
+   <p><em>Figura 2: Pantalla de inicio con alerta de replay attack </em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/frontend/img/pantallaDeLogs.png" alt="Captura del panel de logs">
+   <p><em>Figura 3: Pantalla de logs con las tablas rediseñadas.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/backend/img/servidorWebSocket.png" alt="Captura del servidor">
+   <p><em>Figura 4: Servidor en funcionamiento.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Tests/img/simuladorDePruebas.png" alt="Captura del simulador de pruebas">
+   <p><em>Figura 5: Simulador de pruebas en funcionamiento.</em></p>
+   </div>
 
 #### **Fecha 26/09/2026** 
 
@@ -170,7 +223,7 @@
    - Se puedo testear y verificar con éxito la compilación del entorno con los códigos iniciales, asegurando el empaquetado exacto de la trama de 16 bytes y las librerías criptográficas, aunque aún resta probar su funcionamiento directo sobre HW físico.
 
    - Se estructuró e integró la carpeta de firmware dentro del repositorio, creando una rama de trabajo aislada llamada 'Prueba' para resguardar la rama main. Para asi poder probar y testear código de manera independiente.
-
+   
 - Decisión tomada 
 
    - Se optó por PlatformIO ya que resulta ser mucho más flexible que el IDE tradicional de Arduino para manejar múltiples arquitecturas en un mismo workspace.

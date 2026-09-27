@@ -384,6 +384,13 @@ input {
 .table-container {
     padding: 0;
     overflow: hidden;
+	background-color: var(--bg-panel); 
+	border: 1px solid var(--border); 
+	border-radius: 6px; 
+	  
+	/* LÍMITES PARA SCROLL (aprox. 10 filas de 40px c/u) */
+	max-height: 450px; 
+	overflow-y: auto;
 }
 
 .logs-table {
@@ -392,14 +399,18 @@ input {
     text-align: left;
 }
 
-.logs-table th {
+table th {
     background-color: var(--bg-sidebar);
     color: var(--text-secondary);
     font-weight: 500;
     font-size: 13px;
     padding: 16px 20px;
     border-bottom: 1px solid var(--border);
+	position: sticky;
+	top: 0;
+	z-index: 10;
 }
+
 
 .logs-table td {
     padding: 16px 20px;
@@ -419,6 +430,45 @@ input {
 .status-text.danger {
     color: var(--danger);
 }
+
+/* --- MODO ALERTA (REPLAY ATTACK) --- */
+.global-status-panel.alert-mode {
+    border-color: var(--danger);
+    background-color: rgba(255, 77, 90, 0.05);
+}
+
+.global-status-panel.alert-mode .status-heading {
+    color: var(--danger);
+}
+
+.global-status-panel.alert-mode .status-tag,
+.global-status-panel.alert-mode .status-icon svg {
+    color: var(--danger);
+}
+
+/* Cambia el color del circuito y escudo de fondo a rojo tenue */
+.global-status-panel.alert-mode .circuit-lines,
+.global-status-panel.alert-mode .bg-shield {
+    color: rgba(255, 77, 90, 0.15); 
+}
+
+/* --- APILAMIENTO DE FECHA Y HORA (LOGS) --- */
+.datetime-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.datetime-cell .date {
+    font-size: 14px;
+    color: var(--text-primary);
+}
+
+.datetime-cell .time {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
 
 /* --- RESPONSIVE --- */
 @media (max-width: 768px) {
