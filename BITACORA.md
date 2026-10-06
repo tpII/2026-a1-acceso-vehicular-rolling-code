@@ -257,6 +257,7 @@
 - Problemas encontrados 
    - Los códigos de prueba subidos anteriormente arrastraban errores relacionados al módulo CC1101 principalmente en sus registros de configuración e inicialización. Se investigaron mas en profundidad los campos de configuración del módulo cc1101 y se tomo como referencia los ejemplos de https://registry.platformio.org/libraries/lsatan/SmartRC-CC1101-Driver-Lib/examples adaptandolos a nuestro programa.
 Dichos campos (Algunos modificados y otros nuevos) son los siguientes:
+
     //Indica a la librería que pines se usaran para el BUS SPI con el CC1101
     setSpiPin(D5, D6, D7, D8); 
 
