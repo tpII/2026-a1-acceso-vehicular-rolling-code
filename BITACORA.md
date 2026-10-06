@@ -241,3 +241,47 @@
    - Ensamblar la arquitectura
    - Probar el código inicial compilado directamente en el HW
    - Corregir posibles errores de integración y continuar con el desarrollo y calibración de la lógica de radiofrecuencia ya contando con los nodos.
+
+#### **Fecha 06/10/2026** 
+
+- Qué se hizo? 
+
+   - Se recibieron los materiales de trabajo.
+
+   - Luego se procedió a conectar los respectivos MCU con sus módulos de radiofrecuencia para poder probar los códigos realizados anteriormente.
+
+   - Se configuró la placa WeMOS D1 para poder trabajar con ella (Se tuvo que descargar un driver especifico para que se reconocieron el puerto COM. Fuente: https://www.wemos.cc/en/latest/ch340_driver.html).
+
+   - Se validó el funcionamiento de los componentes mediante la utilización de cables de alimentación y cables dupont.
+
+- Problemas encontrados 
+   - Los códigos de prueba subidos anteriormente arrastraban errores relacionados al módulo CC1101 principalmente en sus registros de configuración e inicialización. Se investigaron mas en profundidad los campos de configuración del módulo cc1101 y se tomo como referencia los ejemplos de https://registry.platformio.org/libraries/lsatan/SmartRC-CC1101-Driver-Lib/examples adaptandolos a nuestro programa.
+Dichos campos (Algunos modificados y otros nuevos) son los siguientes:
+    //Indica a la librería que pines se usaran para el BUS SPI con el CC1101
+    setSpiPin(D5, D6, D7, D8); 
+
+    // Inicializa el CC1101 (Lo reinicia y lo pone en un estado conocido)
+    Init();
+
+    // Modo de paquetes FIFO
+    // 0 -> Modo Asincrónico, 1 -> Modo de paquetes FIFO
+    setCCMode(1);
+
+    // Ambos CC1101 en exactamente la misma configuración
+    setModulation(0);   // 2-FSK
+    setMHZ(433.92);
+
+    // Configuración de paquetes NUEVO
+    setSyncMode(2);
+    setCrc(1);
+
+    //Pone el chip en modo transmisión o recepción
+    SetTx();
+
+Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulos de radiofrecuencia logran comunicarse entre si, pero la información entrante es incorrecta.
+
+- Próximo paso 
+
+   - Continuar con la programación
+   - Solucionar y corregir errores tanto en emisor como receptor
+   - Realizar pruebas y testeos para validar el correcto funcionamiento de los mismos
