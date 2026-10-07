@@ -286,3 +286,21 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
    - Continuar con la programación
    - Solucionar y corregir errores tanto en emisor como receptor
    - Realizar pruebas y testeos para validar el correcto funcionamiento de los mismos
+ 
+#### **Fecha 07/10/2026** 
+
+- Qué se hizo? 
+
+   - Se continuo con la configuración y comunicación inicial de los nodos emisor y receptor.
+   - Se lograron resolver detalles de la inicialización y sincronización de los mismos para poder realizar la primera comunicación (Se adjunta una foto).
+     <img width="369" height="295" alt="image" src="https://github.com/user-attachments/assets/5d6a3a92-2af2-4514-a926-725d0c053d76" />
+
+- Problemas encontrados
+   - Mal seteado los bits en los registros de modulación.
+   - Diferencias entre las configuraciones iniciales de ambos nodos --> Ambos deben de llevar la misma configuración inicial.
+
+- Próximo paso
+   - Conectar el botón al emisor y configurar la interrupción para simular la apertura y cierre del "auto".
+   - Profundizar el desarrollo del código aplicando conceptos de "Deep Sleep" y "Wake-on-Radio" (WoR), en emisor y receptor respectivamente.
+   
+
