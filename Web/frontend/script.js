@@ -1,5 +1,5 @@
 // ============================================================
-// Esta URL debemos cambiarlasi el backend corre en otra
+// Esta URL debemos cambiarla si el backend corre en otra
 // máquina o puerto (por ejemplo, la IP de la notebook en la demo,
 // tipo "http://192.168.0.15:5000").
 // ============================================================
@@ -49,6 +49,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (contador) contador.textContent = datos.contador_actual;
                     if (ataques) ataques.textContent = datos.ataques_rechazados_hoy;
                     if (modIndicatorText) modIndicatorText.textContent = datos.modulacion_actual;
+
+                    // Actualizamos los botones de modulación según lo que indique el backend
+                    const es2Fsk = datos.modulacion_actual === "2-FSK";
+                    btn2Fsk.classList.toggle("active", es2Fsk);
+                    btnOok.classList.toggle("active", !es2Fsk);
                     
                     // ALERTA VISUAL: Cambio de color del panel
                     const panelGlobal = document.querySelector(".global-status-panel");
