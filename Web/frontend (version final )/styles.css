@@ -472,6 +472,7 @@ table th {
 
 /* --- RESPONSIVE --- */
 @media (max-width: 768px) {
+    /* Estructura general */
     .app-container {
         flex-direction: column;
     }
@@ -483,9 +484,73 @@ table th {
     }
     .metrics-grid {
         grid-template-columns: 1fr;
+        gap: 12px;
     }
     .metric-card:not(:last-child) {
         border-right: 1px solid var(--border);
         border-bottom: none;
     }
+
+    /* 1. Navegación tipo App Móvil */
+    .sidebar-header {
+        padding: 16px;
+        justify-content: center;
+        text-align: center;
+    }
+    .sidebar-nav {
+        flex-direction: row;
+        padding: 10px 16px;
+        gap: 10px;
+        overflow-x: auto;
+    }
+    .nav-item {
+        flex: 1;
+        justify-content: center;
+        padding: 10px;
+        font-size: 13px;
+    }
+    .nav-item span {
+        display: none;
+    }
+
+    /* 2. Reajuste del panel de Modulación */
+    .modulation-panel {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 20px;
+        text-align: center;
+    }
+    .mod-info {
+        flex-direction: column;
+        text-align: center;
+    }
+    .toggle-pill-container {
+        width: 100%;
+        max-width: 100%;
+    }
+    .pill-option {
+        padding: 12px 0;
+    }
+
+    /* 3. Espaciado del contenido */
+    .main-content {
+        padding: 16px;
+    }
+    
+    /* 4. Ajuste interno de la tabla */
+    .logs-table th, 
+    .logs-table td {
+        padding: 12px 16px;
+        font-size: 13px;
+    }
+}
+
+/* Fix para el scroll horizontal de la tabla */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.logs-table {
+    min-width: 600px;
 }

@@ -305,3 +305,105 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
    - Profundizar el desarrollo del código aplicando conceptos de "Deep Sleep" y "Wake-on-Radio" (WoR), en emisor y receptor respectivamente.
    
 
+### **Fecha 16/10/2026**
+- ¿Qué se hizo?
+   - Se mejoró la estructura del firmware: se pasó de un proyecto de PlatformIO por nodo a un único proyecto con tres entornos (llavero, auto y atacante), uno por nodo. Para programar un nodo alcanza con seleccionar el entorno correspondiente, y PlatformIO compila solo el código de esa placa.
+   - Organización de las carpetas del proyecto:
+
+     Firmware/
+     ├── platformio.ini     (los 3 entornos)
+     ├── lib/               código compartido entre los nodos
+     ├── data/              web (HTML, CSS y JS) que se aloja en la memoria del ESP32
+     └── src/
+         ├── llavero/       código del nodo emisor
+         ├── auto/          código del nodo receptor
+         └── atacante/      código del nodo interceptor
+   
+         Dentro de cada carpeta de `src/` hay archivos `.cpp` y `.h`. Al seleccionar el entorno se compila y se carga en el microcontrolador únicamente el contenido de su carpeta.
+
+   - Se cambió la forma de servir la web. Antes el ESP32 solo alojaba los archivos estáticos y los servía con ESPAsyncWebServer; para ver la página se conectaba una notebook al WiFi del propio ESP32, y además había que ejecutar un servidor (Flask) que se comunicaba con el servidor local del ESP32, recibía los datos y actualizaba la web mediante WebSocket. Ahora todo queda en el ESP32: sube los archivos estáticos del frontend y actualiza la web con los datos. La PC solo sirve para visualizar la página y, desde la misma, se puede realizar el cambio de modulación.
+   - Se modularizó el código del receptor: la configuración WiFi y el servidor quedaron en archivos separados.
+
+- Problemas encontrados y solución
+   - Con la arquitectura anterior, la web dependía de dos dispositivos (el ESP32 y la PC con el servidor Flask) para actualizarse.
+   - Solución: se pasó toda la lógica del servidor al ESP32. El backend en Flask y el simulador se conservan en el repositorio (carpetas Web/backend y Tests) como herramienta de pruebas.
+
+- Próximo paso
+   - Continuar completando la funcionalidad del receptor.
+   - Separar en la carpeta lib las configuraciones comunes entre los nodos (configuración de la radio y RF del CC1101).
+   - Cifrado de la trama.
+   - Funcionalidad del servomotor.
+   - Estados de seguridad.
+
+- Fecha 17/10/2026
+- ¿Qué se hizo?
+   - Se completó el main.cpp del receptor (auto) con la configuración del CC1101, el Access Point, el servidor web y el WebSocket.
+   - Se creó la librería radio_cc1101 en lib/. La configuración del CC1101 quedó separada del main.cpp en cc1101_config (perfil 2-FSK a 433,92 MHz, que ya habíamos probado, y perfil ASK/OOK). Las funciones de envío y recepción de tramas de 16 bytes están en radio_cc1101: la recepción informa el RSSI y el resultado del CRC de cada trama, y devuelve un resultado (trama válida, CRC incorrecto, longitud incorrecta o desborde de la FIFO). También se agregó rx_start_wor() para escuchar en bajo consumo con Wake-On-Radio (pendiente de validar con el hardware).
+   - Se creó la librería crypto-aes en lib/ con el cifrado y descifrado AES-128 (modo ECB, mbedtls). El receptor descifra la trama, extrae el ID de 4 bytes y el contador, y valida el ID antes de procesar el contador.
+   - Se implementó la validación de los estados de seguridad, definidos como enum en el archivo estados_seguridad.h:
+      - Acceso permitido: el contador recibido está entre +1 y +6 respecto del último válido.
+      - Rechazo por Replay Attack: el contador es menor o igual al último válido.
+      - Alerta de resincronización lógica: salto de +7 a +50.
+      - Rechazo por desincronización: salto mayor a +50 (requiere emparejamiento físico).
+      - ID inválido: la trama pertenece a otro llavero.
+   - El último contador válido se guarda en la memoria NVS del ESP32, y cada evento registrado incluye el RSSI de la trama.
+   - Se creó un archivo con la funcionalidad del servomotor: abre a 90° y cierra a 0°. La puerta se mantiene abierta 3 segundos controlando el tiempo con millis(), para no bloquear el programa mientras tanto.
+   - Se mantiene un modo de prueba por puerto serie (tramas de 16 bytes en hexadecimal) para usar con test_receptor.py.
+   - El firmware del receptor (entorno auto) compila correctamente.
+
+- Problemas encontrados y solución
+   - Con la versión anterior del envío y la recepción de datos entre el llavero y el receptor, que usaba las funciones SendData() y ReceiveData() propias de ELECHOUSE, se encontró un inconveniente.
+      - Problema identificado: Durante las pruebas del proyecto, se analizó el funcionamiento de las funciones SendData() y ReceiveData() de la biblioteca ELECHOUSE para el módulo de radiofrecuencia CC1101, utilizado para la comunicación inalámbrica entre los nodos del sistema. Si bien estas funciones permiten realizar transmisiones y recepciones de datos, se identificaron algunas limitaciones para los requerimientos de nuestro proyecto. En particular, necesitábamos obtener información sobre la calidad de la señal recibida, controlar los tiempos de espera y detectar posibles errores en las tramas intercambiadas. El principal inconveniente se encontraba en la recepción. La función ReceiveData() lee los datos de la trama y, posteriormente, descarta los dos bytes de estado que el CC1101 agrega al final del paquete recibido. Estos bytes contienen información importante: el primero corresponde al valor de RSSI de esa trama y el segundo incluye el indicador de validez del CRC y la información LQI. Como consecuencia, al utilizar la función original se pierde el RSSI asociado específicamente al paquete recibido. Aunque la biblioteca dispone de la función getRssi(), esta consulta el registro de señal del momento en que se realiza la lectura, por lo que el valor obtenido no garantiza corresponder a la trama que se acaba de recibir. Esta limitación resulta relevante para nuestro sistema, ya que buscamos registrar la intensidad de señal de cada comunicación y mostrarla en la interfaz web para facilitar el seguimiento y diagnóstico de los intercambios entre los nodos, para detectar los posibles ataques de Jamming. También se identificaron limitaciones en la gestión de los tiempos de espera y en la detección de errores. La implementación original utiliza esperas bloqueantes y depende del pin GDO0 para determinar el final de la transmisión. Sin embargo, nuestro código no configuraba explícitamente dicho pin, por lo que esta espera podía finalizar al alcanzar el tiempo límite sin detectar correctamente el evento esperado. Por último, el mecanismo original no permitía distinguir de manera suficientemente clara entre una recepción normal, una trama de longitud incorrecta, un error de CRC o un desbordamiento de la FIFO de recepción.
+      - Solucion:
+         - A partir de los problemas identificados, se decidió conservar la configuración de radiofrecuencia que ya se encontraba probada en los nodos emisor y receptor, y modificar únicamente la gestión de la transmisión y la recepción. Se mantuvieron los parámetros de configuración de la biblioteca ELECHOUSE: modo de comunicación, modulación 2-FSK, frecuencia de 433,92 MHz, velocidad de transmisión de 1,2 kBd, desviación de frecuencia, ancho de banda de recepción, canal, sincronización y CRC por hardware. De esta manera, se evita introducir cambios innecesarios en los parámetros de comunicación y se mantiene la compatibilidad de las tramas con la implementación anterior. En lugar de depender exclusivamente de SendData() y ReceiveData(), se desarrolló una capa propia dentro de la biblioteca del proyecto radio_cc1101. Esta capa accede directamente a los registros y a las FIFO del CC1101 para gestionar los paquetes y recuperar la información de estado que antes se descartaba. La nueva implementación incorpora funciones específicas para iniciar una transmisión, consultar su estado, iniciar la recepción y procesar los paquetes recibidos. Además, se establecen tiempos límite para evitar esperas indefinidas.
+         - Modificaciones realizadas:
+            - Gestión de la transmisión: Se incorporaron las funciones tx_start() y tx_poll(), junto con send_blocking() como alternativa de envío con espera limitada. La función tx_start() prepara el módulo para transmitir: lo lleva al estado IDLE, vacía la FIFO de transmisión, escribe el byte de longitud del paquete y los datos correspondientes, y finalmente ejecuta el comando de transmisión STX. Por su parte, tx_poll() permite consultar el estado interno del CC1101 mediante el registro MARCSTATE. De esta manera, se puede determinar si el módulo continúa transmitiendo, si ha finalizado y regresado al estado IDLE o si se produjo un error de subdesbordamiento de la FIFO. La función send_blocking() utiliza este mecanismo de consulta repetida, pero con un tiempo límite calculado a partir de la duración estimada de la trama. Así, se evita depender del pin GDO0 para detectar el final de la transmisión. Esta separación permite disponer de un mecanismo de consulta que no necesita bloquear durante toda la transmisión y, al mismo tiempo, conservar una función de envío sencilla para los casos en los que se necesita esperar el resultado antes de continuar.
+            - Gestión de la recepción: Para la recepción se incorporaron las funciones rx_start() y rx_poll(). La función rx_start() lleva el módulo al estado IDLE, limpia la FIFO de recepción mediante el comando SFRX y vuelve a activar el modo de recepción con SRX. Esto permite iniciar una nueva escucha sin conservar datos anteriores. La función rx_poll() consulta el registro RXBYTES para conocer la cantidad de bytes disponibles en la FIFO. La lectura se realiza dos veces hasta obtener valores coincidentes, debido a que el contenido puede cambiar mientras el módulo recibe información. A partir de esa lectura, se contemplan diferentes situaciones:
+               - Recepción válida: se obtiene una trama de la longitud esperada, se recuperan sus datos y se comprueba el estado del CRC.
+               - Longitud incorrecta: la longitud recibida no coincide con los 16 bytes de datos definidos para nuestro protocolo.
+               - CRC incorrecto: el indicador de estado informa que la trama no superó la comprobación de integridad.
+               - Desbordamiento de FIFO: se detecta que la memoria de recepción se ha desbordado y es necesario recuperarla.
+               - Sin datos disponibles: el módulo continúa esperando una trama sin bloquear el ciclo principal del programa.
+            Los resultados se representan mediante los estados NONE, FRAME, BAD_CRC, BAD_LENGTH y FIFO_OVERFLOW. La función rx_poll() permite consultar periódicamente si se recibió una trama, en lugar de depender de una espera fija con delay(). Esto facilita la integración con una arquitectura de firmware basada en un ciclo principal cooperativo. Como regla de funcionamiento, cuando rx_poll() devuelve un resultado distinto de NONE, el módulo queda en estado IDLE y se debe llamar nuevamente a rx_start() para reanudar la escucha. 
+            - Recuperación del RSSI por trama Una de las modificaciones más importantes consiste en conservar los dos bytes de estado que el CC1101 agrega a la FIFO de recepción cuando está habilitada la opción APPEND_STATUS. Para una trama con 16 bytes de datos, la FIFO de recepción contiene 19 bytes: un byte de longitud, 16 bytes de datos y dos bytes de estado. El primer byte de estado contiene el RSSI de la trama recibida. El segundo contiene el indicador CRC_OK en su bit más significativo y los bits correspondientes a LQI. El RSSI se calcula convirtiendo el byte recibido a un valor con signo y aplicando la fórmula utilizada por la biblioteca:
+               - Si el valor sin signo es menor que 128, se utiliza directamente.
+               - Si es mayor o igual que 128, se le resta 256.
+               - Finalmente, se divide el resultado por dos y se resta 74 para obtener el valor aproximado en dBm.
+            - Este procedimiento permite asociar la intensidad de señal a la trama concreta que se procesó, en lugar de consultar una medición independiente del canal. El valor calculado se entrega junto con los datos recibidos para que pueda utilizarse en el registro de eventos y visualizarse posteriormente en la interfaz web, en la columna RSSI (dBm). Debe tenerse en cuenta que el resultado es una aproximación y que el desplazamiento aplicado depende de los parámetros de funcionamiento del receptor. Por lo tanto, su precisión debe comprobarse mediante pruebas con el hardware real.
+            - Esta solucion mejora el control sobre la comunicación inalámbrica y proporciona información útil para diagnosticar problemas de transmisión y recepción. En particular, permite:
+               - Registrar el RSSI asociado a cada trama recibida.
+               - Identificar errores de integridad mediante el indicador de CRC.
+               - Detectar paquetes de longitud incorrecta y desbordamientos de la FIFO.
+               - Controlar los tiempos de espera de la transmisión.
+               - Consultar periódicamente el estado del módulo sin depender de esperas bloqueantes en la recepción.
+               - Mantener el formato de las tramas y la configuración de radio ya utilizadas por los nodos.
+            La información de RSSI puede incorporarse al registro de eventos del sistema y utilizarse para analizar cómo varía la intensidad de señal cuando cambia la distancia entre los módulos. En conclusión, el cambio de implementación busca adaptar la comunicación del CC1101 a las necesidades del Sistema de Acceso Vehicular Seguro, conservando la configuración y el formato de los paquetes existentes, pero incorporando un control más preciso de la transmisión, la recepción y la información de diagnóstico.
+- Próximo paso
+   - Dejar terminado el receptor, puliendo detalles como la resincronización y la máquina de estados.
+   - Agregar el código del emisor, adaptándolo a los nuevos cambios de comunicación con el receptor.
+   - Mejorar el responsive de la web, para poder visualizar mejor desde el movil.
+
+   <div align="center">
+   <img src="./Web/conexionWiFi.jpg" alt="Captura la conexion WiFi">
+   <p><em>Figura 6: vista de la red WiFi.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/vistaInicioMovil.jpg" alt="Captura de la vista de inicio de la web desde movil">
+   <p><em>Figura 7: vista de inicio de la web desde movil.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/vistaLogsMovil.jpg" alt="Captura de la vista de logs de la web desde movil">
+   <p><em>Figura 8: vista de logs de la web desde movil.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/vistaInicioMovilModoPC.jpg" alt="Captura de la vista de inicio de la web desde movil en modo PC">
+   <p><em>Figura 9: vista de inicio de la web desde movil en modo PC.</em></p>
+   </div>
+
+   <div align="center">
+   <img src="./Web/vistaLogsMovilModoPC.jpg" alt="Captura de la vista de logs de la web desde movil en modo PC">
+   <p><em>Figura 10: vista de logs de la web desde movil en modo PC.</em></p>
+   </div>
