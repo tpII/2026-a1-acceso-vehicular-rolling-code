@@ -383,27 +383,28 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
    - Agregar el código del emisor, adaptándolo a los nuevos cambios de comunicación con el receptor.
    - Mejorar el responsive de la web, para poder visualizar mejor desde el movil.
 
+
    <div align="center">
-   <img src="./Web/conexionWiFi.jpg" alt="Captura la conexion WiFi">
+   <img src="./Web/conexionWiFi.jpg" alt="Captura la conexion WiFi" width="368">
    <p><em>Figura 6: vista de la red WiFi.</em></p>
    </div>
 
    <div align="center">
-   <img src="./Web/vistaInicioMovil.jpg" alt="Captura de la vista de inicio de la web desde movil">
+   <img src="./Web/vistaInicioMovil.jpg" alt="Captura de la vista de inicio de la web desde movil" width="368">
    <p><em>Figura 7: vista de inicio de la web desde movil.</em></p>
    </div>
 
    <div align="center">
-   <img src="./Web/vistaLogsMovil.jpg" alt="Captura de la vista de logs de la web desde movil">
+   <img src="./Web/vistaLogsMovil.jpg" alt="Captura de la vista de logs de la web desde movil" width="368">
    <p><em>Figura 8: vista de logs de la web desde movil.</em></p>
    </div>
 
    <div align="center">
-   <img src="./Web/vistaInicioMovilModoPC.jpg" alt="Captura de la vista de inicio de la web desde movil en modo PC">
+   <img src="./Web/vistaInicioMovilModoPC.jpg" alt="Captura de la vista de inicio de la web desde movil en modo PC" width="368">
    <p><em>Figura 9: vista de inicio de la web desde movil en modo PC.</em></p>
    </div>
 
    <div align="center">
-   <img src="./Web/vistaLogsMovilModoPC.jpg" alt="Captura de la vista de logs de la web desde movil en modo PC">
+   <img src="./Web/vistaLogsMovilModoPC.jpg" alt="Captura de la vista de logs de la web desde movil en modo PC" width="368">
    <p><em>Figura 10: vista de logs de la web desde movil en modo PC.</em></p>
    </div>
