@@ -7,7 +7,8 @@ enum EstadoValidacion {
     RECHAZO_DESINCRONIZACION, // Salto de contador mayor a +50 (Requiere emparejamiento)
     ALERTA_RESINCRONIZACION, // Salto medio (+7 a +50)
     ERROR_ID_INVALIDO, // Trama pertenece a otro llavero
-    ERRO_CRIPTOGRAFICO // Fallo al descifrar AES-128
+    ERRO_CRIPTOGRAFICO, // Fallo al descifrar AES-128
+    ERROR_COMANDO_INVALIDO
 };
 
 

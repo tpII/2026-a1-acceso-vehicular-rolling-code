@@ -6,6 +6,16 @@
 namespace radio {
 
     namespace {
+        constexpr uint8_t REG_WOREVT1 = 0x1E;
+        constexpr uint8_t REG_WOREVT0 = 0x1F;
+        constexpr uint8_t REG_WORCTRL = 0x20;
+        constexpr uint8_t REG_MCSM2 = 0x16;   // MCSM2 esta en 0x16 (0x18 es MCSM0, la autocalibracion)
+
+        // t_Event0 = 750 / 26 MHz * EVENT0 (WOR_RES = 0) -> 34,667 ticks por ms
+        constexpr uint16_t WOR_EVENT0 = (uint16_t)(WOR_PERIODO_MS * 34.667f + 0.5f);
+        constexpr uint8_t  WORCTRL_VALUE = 0x78;  // RC_PD=0, EVENT1=7 (48), RC_CAL=1, bit 2 reservado=0, WOR_RES=00
+        constexpr uint8_t  MCSM2_WOR = 0x08;      // RX_TIME_QUAL=1, RX_TIME=000 (12,5 % de duty cycle con WOR_RES=0)
+        constexpr uint8_t  MCSM2_RX_CONTINUO = 0x07; // RX_TIME=111: hasta fin de paquete
         constexpr uint8_t MARC_MASK = 0x1F;
         constexpr uint8_t MARC_IDLE = 0X01;
         constexpr uint8_t MARC_TXFIFO_UNDERFLOW = 0X16;
@@ -16,7 +26,7 @@ namespace radio {
         constexpr uint8_t STATUS_BYTES = 2;
         constexpr uint8_t CRC_OK_BIT = 0X80;
         constexpr uint8_t FIFO_PACKET_BYTES = LENGTH_BYTES + PAYLOAD_LEN + STATUS_BYTES;
-        
+
         constexpr uint8_t SYNC_BYTES = 2;
         constexpr uint8_t CRC_BYTES = 2;
 
@@ -24,6 +34,20 @@ namespace radio {
         Profile g_profile = PROFILE_2FSK;
         bool g_rx_armed = false;
         bool g_tx_active = false;
+        bool g_usa_gdo0 = false;                  // hay pin GDO0 con interrupcion
+        bool g_wor_activo = false;                // el chip esta durmiendo en WOR
+        volatile bool g_evento_gdo0 = false;      // GDO0 bajo: termino un paquete (IOCFG0 = 0x06)
+
+
+		#if defined(ESP32)
+				#define RADIO_ISR_ATTR IRAM_ATTR
+		#elif defined(ESP8266)
+				#define RADIO_ISR_ATTR ICACHE_RAM_ATTR
+		#else
+				#define RADIO_ISR_ATTR
+		#endif
+
+        void RADIO_ISR_ATTR gdo0_isr() { g_evento_gdo0 = true; }
 
         uint8_t marc_state(){
             return ELECHOUSE_cc1101.SpiReadStatus(CC1101_MARCSTATE) & MARC_MASK;
@@ -60,10 +84,21 @@ namespace radio {
         g_pins = pins;
         g_rx_armed = false;
         g_tx_active = false;
+        g_wor_activo = false;
+
+        if (g_usa_gdo0) detachInterrupt(digitalPinToInterrupt(g_pins.gdo0));
+        g_usa_gdo0 = false;
 
         if (!cc1101_init(pins)) return false;
         cc1101_configure(p);
         g_profile = p;
+
+         // GDO0 (IOCFG0 = 0x06) baja al terminar un paquete: se usa para enterarse sin leer el chip por SPI
+        if (pins.gdo0 >= 0) {
+            g_evento_gdo0 = false;
+            attachInterrupt(digitalPinToInterrupt(pins.gdo0), gdo0_isr, FALLING);
+            g_usa_gdo0 = true;
+        }
         return true;
     }
 
@@ -88,6 +123,7 @@ namespace radio {
         ELECHOUSE_cc1101.SpiStrobe(CC1101_SFTX);
         g_rx_armed = false;
         g_tx_active = false;
+        g_wor_activo = false;
     }
 
     void sleep() {
@@ -108,6 +144,7 @@ namespace radio {
         ELECHOUSE_cc1101.SpiWriteBurstReg(CC1101_TXFIFO, buf, PAYLOAD_LEN);
         ELECHOUSE_cc1101.SpiStrobe(CC1101_STX);
         g_rx_armed = false;
+        g_wor_activo = false;
 
         // Si el chip no transmitio
         if (!wait_leave_idle()) {
@@ -148,7 +185,7 @@ namespace radio {
         for (;;) {
             const TxStatus s = tx_poll();
             if (s == TxStatus::DONE) return true;
-            if (s == TxStatus::BUSY) return false;
+            if (s == TxStatus::FAILED || s == TxStatus::NOT_ACTIVE) return false;
             if (millis() - t0 > timeout_ms) {
                 idle();
                 return false;
@@ -159,14 +196,17 @@ namespace radio {
 
     void rx_start() {
         ELECHOUSE_cc1101.setSidle();
+        ELECHOUSE_cc1101.SpiWriteReg(REG_MCSM2, MCSM2_RX_CONTINUO); // despues de un WOR hay que volver a RX continua
         ELECHOUSE_cc1101.SpiStrobe(CC1101_SFRX);
         ELECHOUSE_cc1101.SpiStrobe(CC1101_SRX);
         wait_leave_idle();
         g_rx_armed = true;
         g_tx_active = false;
+        g_wor_activo = false;
     }
 
-    RxResult rx_poll(uint8_t out[PAYLOAD_LEN], int16_t* rssi_dbm) {
+    // Lectura del FIFO por SPI (el chip tiene que estar despierto)
+    static RxResult leer_fifo(uint8_t out[PAYLOAD_LEN], int16_t* rssi_dbm) {
         const uint8_t rxb = rxbytes_stable();
         const uint8_t count = rxb & RXBYTES_COUNT_MASK;
 
@@ -199,28 +239,50 @@ namespace radio {
             }
             idle();
             return RxResult::BAD_LENGTH;
-        } 
+        }
         return RxResult::NONE;
     }
 
     void rx_start_wor() {
-        // 1. Pasar a IDLE y vaciar la FIFO de recepción para evitar basura previa
-        ELECHOUSE_cc1101.SpiStrobe(0x36); // Comando SIDLE
-        ELECHOUSE_cc1101.SpiStrobe(0x3A); // Comando SFRX
+        // Sin interrupcion de GDO0 no hay forma de enterarse sin despertar al chip: recepcion continua
+        if (!g_usa_gdo0) {
+            rx_start();
+            return;
+        }
+        // 1. IDLE y FIFO de recepcion vacio
+        ELECHOUSE_cc1101.setSidle();
+        ELECHOUSE_cc1101.SpiStrobe(CC1101_SFRX);
 
-        // 2. Configurar registros exclusivos de Wake-On-Radio
-        // WORCTRL (0x20): Enciende el oscilador RC interno (requerido para el temporizador WOR)
-        ELECHOUSE_cc1101.SpiWriteReg(0x20, 0x78); 
-        
-        // MCSM2 (0x18): Configurar el ciclo de trabajo de recepción (RX_TIME)
-        ELECHOUSE_cc1101.SpiWriteReg(0x18, 0x00); 
-        
-        // 3. Sincronizar el reloj
-        // SWORRST (0x3C): Resetea el RTC al valor del Evento 1
-        ELECHOUSE_cc1101.SpiStrobe(0x3C); 
+        // 2. Registros de Wake-On-Radio
+        ELECHOUSE_cc1101.SpiWriteReg(REG_WORCTRL, WORCTRL_VALUE);          // oscilador RC activo y calibrado
+        ELECHOUSE_cc1101.SpiWriteReg(REG_WOREVT1, (uint8_t)(WOR_EVENT0 >> 8));
+        ELECHOUSE_cc1101.SpiWriteReg(REG_WOREVT0, (uint8_t)(WOR_EVENT0 & 0xFF));
+        ELECHOUSE_cc1101.SpiWriteReg(REG_MCSM2, MCSM2_WOR);                // ventana de escucha
 
-        // 4. Iniciar la secuencia WOR
-        // SWOR (0x38): Activa el polling automático en lugar de la recepción continua
-        ELECHOUSE_cc1101.SpiStrobe(0x38); 
+        // 3. Reiniciar el reloj del WOR y arrancar el polling automatico
+        ELECHOUSE_cc1101.SpiStrobe(CC1101_SWORRST);
+        g_evento_gdo0 = false;
+        g_rx_armed = false;
+        g_tx_active = false;
+        g_wor_activo = true;
+        ELECHOUSE_cc1101.SpiStrobe(CC1101_SWOR);
     }
+
+     RxResult rx_poll(uint8_t out[PAYLOAD_LEN], int16_t* rssi_dbm) {
+        // En WOR el chip duerme: si no hubo evento de GDO0 no se lo toca por SPI (lo despertaria
+        // y cancelaria el WOR).
+        const bool en_wor = g_wor_activo && g_usa_gdo0;
+        if (en_wor) {
+            if (!g_evento_gdo0) return RxResult::NONE;
+            g_evento_gdo0 = false;
+            g_wor_activo = false;
+        }
+
+        const RxResult r = leer_fifo(out, rssi_dbm);
+
+        // Evento sin paquete (por ejemplo un paquete descartado): volver a dormir en WOR
+        if (en_wor && r == RxResult::NONE) rx_start_wor();
+        return r;
+    }
+
 }

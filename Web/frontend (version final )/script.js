@@ -1,11 +1,3 @@
-// ============================================================
-// Esta URL debemos cambiarla si el backend corre en otra
-// máquina o puerto (por ejemplo, la IP de la notebook en la demo,
-// tipo "http://192.168.0.15:5000").
-// ============================================================
-const BACKEND_URL = "http://127.0.0.1:5000";
-
-
 document.addEventListener("DOMContentLoaded", () => {
     // La API se encuentra en el mismo equipo que sirve la interfaz.
     // Versión actual: servidor Flask, si la web se sirve desde él.
@@ -15,6 +7,29 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn2Fsk = document.getElementById("btn-2fsk");
     const btnOok = document.getElementById("btn-ook");
     const modIndicatorText = document.getElementById("current-mod-text");
+    const viewContainer = document.querySelector(".view-container");
+    let bannerResync = document.getElementById("resync-alert");
+    if (!bannerResync && viewContainer) {
+        bannerResync = document.createElement("section");
+        bannerResync.id = "resync-alert";
+        bannerResync.className = "resync-alert";
+        bannerResync.setAttribute("role", "alert");
+        bannerResync.setAttribute("aria-live", "assertive");
+        bannerResync.hidden = true;
+        viewContainer.prepend(bannerResync);
+    }
+    function actualizarAlertaResync(datos) {
+        if (!bannerResync) return;
+        const requerida = Boolean(datos.resincronizacion_fisica_requerida);
+        bannerResync.hidden = !requerida;
+        if (!requerida) return;
+        bannerResync.replaceChildren();
+        const titulo = document.createElement("strong");
+        titulo.textContent = "Resincronización física requerida";
+        const detalle = document.createElement("p");
+        detalle.textContent = datos.mensaje || "Se rechazó una trama fuera de la ventana. El contador válido no se modificó. Realice el procedimiento físico de resincronización del llavero.";
+        bannerResync.append(titulo, detalle);
+    }
     const filterInput = document.querySelector(".filter-bar input");
     const logsTbody = document.getElementById("logs-tbody");
 

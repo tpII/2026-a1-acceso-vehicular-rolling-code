@@ -33,19 +33,18 @@ namespace rf {
 
     const char* frame_status_name(FrameStatus s) {
         switch (s) {
-            case FrameStatus::ACCEPTED:              return "ACEPTADO";
-            case FrameStatus::ACCEPTED_AFTER_RESYNC: return "ACEPTADO_TRAS_RESINCRONIZACION";
-            case FrameStatus::REPLAY:                return "RECHAZADO_REPLAY_ATTACK";
-            case FrameStatus::RESYNC_LOGICAL:        return "REQUIERE_RESINCRONIZACION_LOGICA";
-            case FrameStatus::RESYNC_PHYSICAL:       return "REQUIERE_RESINCRONIZACION_FISICA";
+            case FrameStatus::ACCEPTED:        return "ACEPTADO";
+            case FrameStatus::REPLAY:          return "RECHAZADO_REPLAY_ATTACK";
+            case FrameStatus::RESYNC_PHYSICAL: return "REQUIERE_RESINCRONIZACION_FISICA";
             case FrameStatus::ID_INVALID:            return "RECHAZADO_ID_INVALIDO";
             case FrameStatus::CRYPTO_ERROR:          return "RECHAZADO_ERROR_CRIPTOGRAFICO";
+            case FrameStatus::INVALID_COMMAND:        return "RECHAZADO_COMANDO_INVALIDO";
         }
         return "DESCONOCIDO";
     }
 
     bool frame_status_accepted(FrameStatus s) {
-        return s == FrameStatus::ACCEPTED || s == FrameStatus::ACCEPTED_AFTER_RESYNC;
+        return s == FrameStatus::ACCEPTED;
     }
 
-}  
+}

@@ -470,9 +470,9 @@ table th {
 }
 
 
-/* --- RESPONSIVE UNIFICADO --- */
+/* --- RESPONSIVE --- */
 @media (max-width: 768px) {
-    /* Estructura general (Tu código original) */
+    /* Estructura general */
     .app-container {
         flex-direction: column;
     }
@@ -545,7 +545,7 @@ table th {
     }
 }
 
-/* Fix para el scroll horizontal de la tabla (Aplica a todos los tamaños) */
+/* Fix para el scroll horizontal de la tabla */
 .table-container {
     width: 100%;
     overflow-x: auto;
@@ -554,3 +554,9 @@ table th {
 .logs-table {
     min-width: 600px;
 }
+
+/* Alerta persistente para resincronización física del Rolling Code */
+.resync-alert { margin: 0 0 20px; padding: 16px 18px; border: 1px solid #ef4444; border-left: 5px solid #ef4444; border-radius: 12px; background: rgba(127, 29, 29, 0.28); color: #fee2e2; }
+.resync-alert[hidden] { display: none; }
+.resync-alert strong { display: block; margin-bottom: 6px; font-size: 1rem; }
+.resync-alert p { margin: 0; line-height: 1.5; }

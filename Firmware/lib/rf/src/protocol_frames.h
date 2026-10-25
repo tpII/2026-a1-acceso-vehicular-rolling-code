@@ -12,8 +12,15 @@ namespace rf {
     constexpr uint8_t ID_SIZE      = 4;
     constexpr uint8_t PADDING_SIZE = 7;
 
-    // Valores del campo "command". Reservados para despues: ACK y cambio de modulacion.
-    constexpr uint8_t CMD_OPEN = 0x01;
+    // Valores del campo "command".
+    constexpr uint8_t CMD_OPEN = 0x01; // llavero --> auto: pulsador presionado.
+    constexpr uint8_t CMD_SET_FSK2 = 0x10; // auto --> llavero: cambiar a 2-fsk.
+    constexpr uint8_t CMD_SET_OOK = 0x11; // auto --> llavero: cambiar a ASK/OOK
+
+    constexpr uint8_t CMD_ACK_FLAG = 0x80; // llavero --> auto: ACK = comando recibido con este bit en 1.
+
+    // Las tramas auto -> llavero y los ACK llevan en "counter" el contador de la trama CMD_OPEN
+    // a la que responden: asi una orden grabada de un pulsado anterior no sirve (anti-replay).
 
     // Layout de la trama ANTES de cifrar (16 bytes):
     //   [0..3]  id       4 bytes crudos (igual que ID_ESPERADO: AB CD EF 01)
@@ -34,13 +41,12 @@ namespace rf {
 
     // Resultado de procesar una trama recibida (unifica WindowResult y EstadoValidacion).
     enum class FrameStatus : uint8_t {
-        ACCEPTED,                // contador en +1..+6
-        ACCEPTED_AFTER_RESYNC,   // segunda trama consecutiva de una resincronizacion logica
+        ACCEPTED,                // contador esperado o hasta 6 unidades por delante
         REPLAY,                  // contador <= ultimo aceptado
-        RESYNC_LOGICAL,          // salto +7..+50: queda pendiente, no abre
-        RESYNC_PHYSICAL,         // salto > +50: requiere emparejamiento manual
+        RESYNC_PHYSICAL,         // fuera de la ventana: requiere emparejamiento manual
         ID_INVALID,              // la trama pertenece a otro llavero
-        CRYPTO_ERROR             // fallo al descifrar / trama mal formada
+        CRYPTO_ERROR,            // fallo al descifrar / trama mal formada
+        INVALID_COMMAND          // comando no permitido para el receptor
     };
 
     // Texto estable (lo usa el protocolo serie de test_receptor.py y los logs).
@@ -48,6 +54,6 @@ namespace rf {
     // true si la trama debe abrir la puerta y persistir el nuevo contador.
     bool frame_status_accepted(FrameStatus s);
 
-    }  
+    }
 
-#endif 
+#endif

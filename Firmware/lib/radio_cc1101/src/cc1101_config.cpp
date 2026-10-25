@@ -3,7 +3,7 @@
 #include "cc1101_config.h"
 
 
-//modulation, frequency,  bandwidth, deviation, data rate
+//modulation, frequency, data rate, deviation, bandwidth
 namespace radio {
 
     const Profile PROFILE_2FSK = { Modulation::FSK2, 433.92f, 1.2f, 5.16f, 58.03f};
@@ -33,12 +33,15 @@ namespace radio {
             ELECHOUSE_cc1101.setDeviation(p.deviation_khz); // Configura la desviación de frecuencia en kHz (solo para FSK2)
         }
         ELECHOUSE_cc1101.setRxBW(p.rxbw_khz); // Configura el ancho de banda de recepción en kHz
-        ELECHOUSE_cc1101.setChannel(CHANNEL); 
+        ELECHOUSE_cc1101.setChannel(CHANNEL);
         ELECHOUSE_cc1101.setSyncMode(SYNC_MODE);
         ELECHOUSE_cc1101.setCrc(true); // Habilita la verificación de CRC
+        ELECHOUSE_cc1101.setAppendStatus(true); // FIFO agrega RSSI + LQI/CRC_OK al final
         ELECHOUSE_cc1101.setSyncWord(SYNC_WORD_H, SYNC_WORD_L); // Configura la palabra de sincronización
+        ELECHOUSE_cc1101.setPRE(PREAMBLE_CODE); // Preámbulo largo (necesario para el WOR del receptor)
+        ELECHOUSE_cc1101.setPQT(PQT_VALUE);     // Umbral de calidad de preámbulo
     }
-    
+
     // Devuelve la configuración actual del módulo CC1101 en un objeto Readback
     Readback cc1101_readback(){
         Readback r;

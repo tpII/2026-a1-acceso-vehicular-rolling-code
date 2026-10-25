@@ -1,5 +1,4 @@
 #include "servidor.h"
-#include "red_wifi.h" // Para acceder a RedWiFi::server y notificarFrontendWebSocket
 
 namespace ServidorWeb {
 
@@ -27,9 +26,16 @@ namespace ServidorWeb {
             json += "\"sistema_seguro\":" + String(sistema_seguro ? "true" : "false") + ",";
             json += "\"texto_estado\":\"" + String(sistema_seguro ? "Sistema seguro" : "Alerta de seguridad") + "\",";
             json += "\"mensaje\":\"" + mensaje_estado + "\",";
+            json += "\"resincronizacion_fisica_requerida\":" + String(resincronizacion_fisica_requerida ? "true" : "false") + ",";
+            json += "\"contador_esperado_resync\":" + String(contador_esperado_resync) + ",";
+            json += "\"contador_recibido_resync\":" + String(contador_recibido_resync) + ",";
             json += "\"contador_actual\":" + String(ultimo_contador) + ",";
             json += "\"ataques_rechazados_hoy\":" + String(ataques_rechazados) + ",";
-            json += "\"modulacion_actual\":\"" + modulacion_actual + "\"";
+            json += "\"modulacion_actual\":\"" + modulacion_actual + "\",";
+            json += "\"modulacion_pendiente\":";
+            json += Sincronizacion::hay_pendiente()
+                    ? "\"" + String(Sincronizacion::pendiente() == radio::Modulation::ASK_OOK ? "ASK/OOK" : "2-FSK") + "\""
+                    : String("null");
             json += "}";
             request->send(200, "application/json", json);
         });
@@ -40,18 +46,21 @@ namespace ServidorWeb {
                 String body = "";
                 for(size_t i=0; i<len; i++) body += (char)data[i];
 
-                String moduloViejo = modulacion_actual;
-                
-                if(body.indexOf("2-FSK") > 0) {
-                    modulacion_actual = "2-FSK";
-                    registrarEvento("CAMBIO_MODULACION", 0, 0, 0, modulacion_actual, ACCESO_PERMITIDO); // Registrar cambio de modulación
-                    request->send(200, "application/json", "{\"ok\":true, \"modulacion_actual\":\"2-FSK\"}");
-                } else if(body.indexOf("ASK/OOK") > 0) {
-                    modulacion_actual = "ASK/OOK";
-                    registrarEvento("CAMBIO_MODULACION", 0, 0, 0, modulacion_actual, ACCESO_PERMITIDO); // Registrar cambio de modulación
-                    request->send(200, "application/json", "{\"ok\":true, \"modulacion_actual\":\"ASK/OOK\"}");
-                } else {
+                // El cambio NO se aplica acá: queda pendiente hasta que el llavero lo confirme por RF.
+                String deseada = "";
+                radio::Modulation pedida = radio::Modulation::FSK2;
+                if (body.indexOf("2-FSK") > 0)         { deseada = "2-FSK";   pedida = radio::Modulation::FSK2; }
+                else if (body.indexOf("ASK/OOK") > 0)  { deseada = "ASK/OOK"; pedida = radio::Modulation::ASK_OOK; }
+
+                if (deseada == "") {
                     request->send(400, "application/json", "{\"ok\":false, \"error\":\"Modulación inválida\"}");
+                } else if (deseada == modulacion_actual) {
+                    Sincronizacion::cancelar();   // volvió a pedir la vigente: se descarta lo pendiente
+                    request->send(200, "application/json", "{\"ok\":true, \"pendiente\":false, \"modulacion_actual\":\"" + modulacion_actual + "\"}");
+                } else {
+                    Sincronizacion::solicitar(pedida);
+                    registrarEvento("CAMBIO_SOLICITADO", 0, 0, 0, modulacion_actual, ACCESO_PERMITIDO);
+                    request->send(202, "application/json", "{\"ok\":true, \"pendiente\":true, \"modulacion_actual\":\"" + modulacion_actual + "\", \"modulacion_deseada\":\"" + deseada + "\"}");
                 }
                 
                 // Forzar recarga visual en todos los navegadores conectados
@@ -68,8 +77,9 @@ namespace ServidorWeb {
                 EventoSeguridad ev = historialLogs[idx];
                 
                 String strResultado = (ev.estado == ACCESO_PERMITIDO) ? "aceptado" : "rechazado";
-                String tipoAtaque = (ev.estado == RECHAZO_REPLAY_ATTACK) ? "Replay Attack" : 
-                                    (ev.estado == RECHAZO_DESINCRONIZACION) ? "Desincronización Severa" : "Ninguno";
+                String tipoAtaque = (ev.estado == RECHAZO_REPLAY_ATTACK) ? "Replay Attack" :
+                                    (ev.estado == RECHAZO_DESINCRONIZACION) ? "Resincronización física requerida" :
+                                    (ev.estado == ALERTA_RESINCRONIZACION) ? "Alerta de sincronización" : "Ninguno";
 
                 json += "{";
                 json += "\"fecha_hora\":\"Uptime " + String(millis() / 1000) + "s\",";

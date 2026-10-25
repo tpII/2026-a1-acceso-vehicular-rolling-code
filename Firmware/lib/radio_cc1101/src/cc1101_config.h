@@ -29,7 +29,15 @@ namespace radio {
     constexpr uint8_t SYNC_WORD_L = 0x91; // Parte baja de la palabra de sincronización
     constexpr uint8_t SYNC_MODE = 0x02;    // Modo de sincronización (0x02 = 16 bits de sincronización)
     constexpr uint8_t CHANNEL = 0; // Canal de operación (0-255)
-    constexpr uint8_t PREAMBLE_BYTES = 2; // Número de bytes de preámbulo (2 bytes)
+    // Preámbulo largo: el receptor duerme en Wake-On-Radio y despierta cada WOR_PERIODO_MS,
+    // así que el preámbulo tiene que durar más que ese período para que lo "pesque" despierto.
+    // 24 bytes es el máximo del CC1101 (a 1,2 kBd son 160 ms).
+    constexpr uint8_t PREAMBLE_BYTES = 24;  // bytes de preámbulo que se transmiten
+    constexpr uint8_t PREAMBLE_CODE  = 7;   // valor de MDMCFG1.NUM_PREAMBLE para 24 bytes (0=2, 1=3, 2=4, 3=6, 4=8, 5=12, 6=16, 7=24)
+    // Umbral de calidad de preámbulo (PKTCTRL1.PQT): el sync word solo se acepta tras 4*PQT
+    // transiciones de preámbulo. Con PQT > 0 el receptor en WOR sigue escuchando si ve preámbulo
+    // cuando vence su ventana de recepción.
+    constexpr uint8_t PQT_VALUE = 1;
 
     // Estructura que define el mapeo físico de los pines del CC1101
     struct Pins {

@@ -1,6 +1,4 @@
 #include "servomotor.h"
-#include <Arduino.h>
-#include <ESP32Servo.h> // La librería externa queda confinada solo a este archivo
 
 const uint32_t TIEMPO_ABIERTA_MS = 3000;
 bool abierta = false;
