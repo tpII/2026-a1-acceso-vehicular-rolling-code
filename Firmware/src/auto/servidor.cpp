@@ -11,9 +11,50 @@ namespace ServidorWeb {
     int total_logs = 0;
 
     void registrarEvento(String tramaHex, uint32_t id, uint32_t contador, int rssi, String modulacion, EstadoValidacion resultado) {
-        historialLogs[indice_log] = {tramaHex, id, contador, rssi, modulacion, resultado};
+        historialLogs[indice_log] = {tramaHex, id, contador, rssi, modulacion, resultado, millis() / 1000};
         indice_log = (indice_log + 1) % MAX_LOGS;
         if (total_logs < MAX_LOGS) total_logs++;
+    }
+
+    // El ESP32 no tiene RTC ni acceso a internet (es un Access Point aislado, sin uplink para
+    // NTP), asi que no puede saber la fecha/hora real. Lo mas cercano sin agregar un modulo de
+    // reloj aparte es mostrar hace cuanto paso cada evento, calculado con el uptime (millis())
+    // que tenia el ESP32 en el momento en que se registro.
+    static String formatearAntiguedad(uint32_t timestamp_s) {
+        const uint32_t ahora_s = millis() / 1000;
+        // Resta protegida: por si millis() ya dio la vuelta (desborda a los ~49 dias).
+        const uint32_t antiguedad = (ahora_s >= timestamp_s) ? (ahora_s - timestamp_s) : 0;
+
+        if (antiguedad < 60)   return "hace " + String(antiguedad) + "s";
+        if (antiguedad < 3600) return "hace " + String(antiguedad / 60) + "m";
+        return "hace " + String(antiguedad / 3600) + "h";
+    }
+
+    // Genera el JSON de tramas filtrando por modulación ("2-FSK" o "ASK/OOK")
+    static String generarJsonTramasPorModulacion(const String& modFiltro) {
+        String json = "[";
+        bool primero = true;
+
+        for (int i = 0; i < total_logs; i++) {
+            int idx = (indice_log - 1 - i + MAX_LOGS) % MAX_LOGS;
+            EventoSeguridad ev = historialLogs[idx];
+
+            // Ignorar eventos internos que no son tramas RF de 32 caracteres hex
+            if (ev.modulacion != modFiltro || ev.tramaHex.length() != 32) continue;
+
+            if (!primero) json += ",";
+            primero = false;
+
+            String strResultado = (ev.estado == ACCESO_PERMITIDO) ? "aceptado" : "rechazado";
+            json += "{";
+            json += "\"hora\":\"" + formatearAntiguedad(ev.timestamp_s) + "\",";
+            json += "\"trama\":\"" + ev.tramaHex + "\",";
+            json += "\"rssi\":" + String(ev.rssi) + ",";
+            json += "\"resultado\":\"" + strResultado + "\"";
+            json += "}";
+        }
+        json += "]";
+        return json;
     }
 
     // ==========================================
@@ -46,24 +87,22 @@ namespace ServidorWeb {
                 String body = "";
                 for(size_t i=0; i<len; i++) body += (char)data[i];
 
-                // El cambio NO se aplica acá: queda pendiente hasta que el llavero lo confirme por RF.
                 String deseada = "";
                 radio::Modulation pedida = radio::Modulation::FSK2;
-                if (body.indexOf("2-FSK") > 0)         { deseada = "2-FSK";   pedida = radio::Modulation::FSK2; }
-                else if (body.indexOf("ASK/OOK") > 0)  { deseada = "ASK/OOK"; pedida = radio::Modulation::ASK_OOK; }
+                if (body.indexOf("2-FSK") >= 0)        { deseada = "2-FSK";   pedida = radio::Modulation::FSK2; }
+                else if (body.indexOf("ASK/OOK") >= 0) { deseada = "ASK/OOK"; pedida = radio::Modulation::ASK_OOK; }
 
                 if (deseada == "") {
                     request->send(400, "application/json", "{\"ok\":false, \"error\":\"Modulación inválida\"}");
                 } else if (deseada == modulacion_actual) {
-                    Sincronizacion::cancelar();   // volvió a pedir la vigente: se descarta lo pendiente
-                    request->send(200, "application/json", "{\"ok\":true, \"pendiente\":false, \"modulacion_actual\":\"" + modulacion_actual + "\"}");
+                    Sincronizacion::cancelar();
+                    request->send(200, "application/json", "{\"ok\":true, \"pendiente\":false, \"modulacion_actual\":\"" + modulacion_actual + "\", \"modulacion_deseada\":\"" + deseada + "\"}");
                 } else {
                     Sincronizacion::solicitar(pedida);
-                    registrarEvento("CAMBIO_SOLICITADO", 0, 0, 0, modulacion_actual, ACCESO_PERMITIDO);
+                    registrarEvento("CAMBIO_SOLICITADO", 0, ultimo_contador, 0, deseada, ACCESO_PERMITIDO);
                     request->send(202, "application/json", "{\"ok\":true, \"pendiente\":true, \"modulacion_actual\":\"" + modulacion_actual + "\", \"modulacion_deseada\":\"" + deseada + "\"}");
                 }
                 
-                // Forzar recarga visual en todos los navegadores conectados
                 RedWiFi::notificarFrontendWebSocket("{\"recargar\": true}");
         });
 
@@ -82,7 +121,7 @@ namespace ServidorWeb {
                                     (ev.estado == ALERTA_RESINCRONIZACION) ? "Alerta de sincronización" : "Ninguno";
 
                 json += "{";
-                json += "\"fecha_hora\":\"Uptime " + String(millis() / 1000) + "s\",";
+                json += "\"fecha_hora\":\"" + formatearAntiguedad(ev.timestamp_s) + "\",";
                 json += "\"id_llavero\":\"0x" + String(ev.idllavero, HEX) + "\",";
                 json += "\"contador\":" + String(ev.contador) + ",";
                 json += "\"modulacion\":\"" + ev.modulacion + "\",";
@@ -98,12 +137,12 @@ namespace ServidorWeb {
             request->send(200, "application/json", json);
         });
 
-        // 4. Endpoints: Tramas recientes
+        // 4. Endpoints: Tramas recientes por modulación
         RedWiFi::server.on("/api/tramas/2fsk", HTTP_GET, [](AsyncWebServerRequest *request){
-            request->send(200, "application/json", "[]"); 
+            request->send(200, "application/json", generarJsonTramasPorModulacion("2-FSK")); 
         });
         RedWiFi::server.on("/api/tramas/ook", HTTP_GET, [](AsyncWebServerRequest *request){
-            request->send(200, "application/json", "[]"); 
+            request->send(200, "application/json", generarJsonTramasPorModulacion("ASK/OOK")); 
         });
     }
 }

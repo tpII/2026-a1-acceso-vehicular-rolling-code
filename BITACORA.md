@@ -319,7 +319,7 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
          ├── auto/          código del nodo receptor
          └── atacante/      código del nodo interceptor
    
-         Dentro de cada carpeta de `src/` hay archivos `.cpp` y `.h`. Al seleccionar el entorno se compila y se carga en el microcontrolador únicamente el contenido de su carpeta.
+    Dentro de cada carpeta de `src/` hay archivos `.cpp` y `.h`. Al seleccionar el entorno se compila y se carga en el microcontrolador únicamente el contenido de su carpeta.
 
    - Se cambió la forma de servir la web. Antes el ESP32 solo alojaba los archivos estáticos y los servía con ESPAsyncWebServer; para ver la página se conectaba una notebook al WiFi del propio ESP32, y además había que ejecutar un servidor (Flask) que se comunicaba con el servidor local del ESP32, recibía los datos y actualizaba la web mediante WebSocket. Ahora todo queda en el ESP32: sube los archivos estáticos del frontend y actualiza la web con los datos. La PC solo sirve para visualizar la página y, desde la misma, se puede realizar el cambio de modulación.
    - Se modularizó el código del receptor: la configuración WiFi y el servidor quedaron en archivos separados.
@@ -335,7 +335,7 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
    - Funcionalidad del servomotor.
    - Estados de seguridad.
 
-- Fecha 17/10/2026
+### **Fecha 17/10/2026**
 - ¿Qué se hizo?
    - Se completó el main.cpp del receptor (auto) con la configuración del CC1101, el Access Point, el servidor web y el WebSocket.
    - Se creó la librería radio_cc1101 en lib/. La configuración del CC1101 quedó separada del main.cpp en cc1101_config (perfil 2-FSK a 433,92 MHz, que ya habíamos probado, y perfil ASK/OOK). Las funciones de envío y recepción de tramas de 16 bytes están en radio_cc1101: la recepción informa el RSSI y el resultado del CRC de cada trama, y devuelve un resultado (trama válida, CRC incorrecto, longitud incorrecta o desborde de la FIFO). También se agregó rx_start_wor() para escuchar en bajo consumo con Wake-On-Radio (pendiente de validar con el hardware).
@@ -407,3 +407,36 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
 <img src="./Web/vistaLogsMovilModoPC.jpg" alt="Captura de la vista de logs de la web desde movil en modo PC" width="368">
 <p><em>Figura 10: vista de logs de la web desde movil en modo PC.</em></p>
 </div>
+
+
+### **20/10/2026*
+- ¿Qué se hizo?
+   - Se probó el código del servomotor SG90 de forma independiente (entorno servo_test), confirmando que abre a 90° y cierra solo a los 3 segundos. Se continuó con las pruebas de Pytest y se agregó una foto de la prueba del servo. Se mejoró el responsive de la página web para que se vea bien en el celular. Se comenzó la incorporación del nodo emisor (llavero) al proyecto.
+- Próximo paso
+   - Terminar de incorporar el nodo emisor y sumar la resincronización de modulación con el receptor.
+
+<div align="center">
+<img src="./Firmware/test/pruebasEnPytest.jpeg" alt="Captura de las pruebas pasadas con Pytest" width="640">
+<p><em>Figura 11: pruebas pasadas con Pytest.</em></p>
+</div>
+
+### **21/10/2026**
+- ¿Qué se hizo?
+   - Se terminó de incorporar el nodo emisor (llavero). Se implementó el método de resincronización para el cambio de modulación entre emisor y receptor: el receptor manda la orden de cambio apenas valida una trama, y el llavero confirma con un ACK para que los dos cambien de modulación a la vez. Se corrigieron las condiciones de resincronización lógica y física: antes había dos niveles, una ventana de +1 a +6 que se aceptaba directamente y una de +7 a +50 que quedaba en “resincronización lógica” pendiente de una segunda trama consecutiva que confirmara el nuevo contador. Se simplificó a un solo criterio: el contador se acepta si está entre el esperado y el esperado+6; cualquier valor fuera de esa ventana exige resincronización física, sin el paso intermedio. Se incorporó el Wake-On-Radio en el receptor, con valores de prueba para algunos parámetros (período de escucha, umbral de calidad de preámbulo) que todavía hay que ajustar con el hardware real.
+
+- Problemas encontrados y solución
+   - El tiempo de espera del llavero entre transmitir y volver a dormirse pasó de 50 ms a unos 300 ms. La causa: ese tiempo tiene que cubrir lo que tarda en el aire la trama con la orden de cambio de modulación que manda el receptor. Al incorporar un preámbulo largo (24 bytes, necesario para que el receptor pueda usar Wake-On-Radio sin perderse la trama), el tiempo en el aire de una trama de 16 bytes pasó de unos 153 ms (con el preámbulo corto de 2 bytes) a unos 300 ms. Con los 50 ms originales, el llavero se volvía a dormir antes de que la orden llegara completa y el cambio de modulación nunca se confirmaba.
+
+- Próximo paso
+   - Probar la comunicación completa entre emisor y receptor con el hardware armado.
+
+### **22/10/2026 **
+- ¿Qué se hizo?
+   - Nos reunimos en la facultad para probar la comunicación entre emisor y receptor con el hardware real.
+
+- Problemas encontrados y solución
+   - El receptor recibe la trama correctamente y se puede ver en la web, pero el cambio de modulación pedido desde la web no se concreta: la trama siguiente capturada aparece en la misma fila de la tabla, como si el cambio nunca se hubiera aplicado. Sospechamos de un error en la recepción de los ACKs entre emisor y receptor para sincronizarse, y de algún registro del CC1101 mal configurado. También hace falta ajustar algunos de los valores de prueba del Wake-On-Radio. Sin resolver todavía.
+
+- Próximo paso
+   - Seguir haciendo pruebas hasta dar con la configuración correcta.
+

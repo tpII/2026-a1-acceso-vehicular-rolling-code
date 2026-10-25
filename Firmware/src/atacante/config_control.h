@@ -1,5 +1,5 @@
-#ifndef CONFIG_CONTROL_H
-#define CONFIG_CONTROL_H
+#ifndef CONFIG_PERIFERICOS_H
+#define CONFIG_PERIFERICOS_H
 
 // Pulsadores y selector de modulacion del nodo interceptor (poncho para Arduino UNO).
 //
@@ -27,9 +27,15 @@ namespace perifericos {
     void iniciar();
 
     // Un flanco por vuelta de loop(), ya filtrado el rebote (ver config_perifericos.cpp).
-    Edge leer_captura();
     Edge leer_replay();
     Edge leer_jamming();
+
+    // CAPTURA distingue pulsacion corta de mantenida (3 s): corta -> descarta la trama que
+    // hubiera y vuelve a escuchar; mantenida -> duerme. Llamar una vez por vuelta de loop()
+    // SOLO mientras el nodo esta despierto (el despertar en si lo maneja la interrupcion en
+    // main.cpp, no esta funcion).
+    enum class AccionCaptura : uint8_t { NINGUNA, DESCARTAR_Y_RECAPTURAR, DORMIR };
+    AccionCaptura evaluar_captura();
 
     // Lectura cruda del selector, sin debounce (para leerla una sola vez al despertar / al
     // configurar el CC1101, donde ya no hace falta filtrar ruido porque se usa una sola vez).

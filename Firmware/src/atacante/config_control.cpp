@@ -35,10 +35,16 @@ namespace perifericos {
             }
         };
 
+        constexpr uint32_t MANTENIDO_DORMIR_MS = 3000; // mantener CAPTURA este tiempo -> dormir
+
         Boton g_captura, g_replay, g_jamming;
         radio::Modulation g_mod_estable;
         radio::Modulation g_mod_candidata;
         uint32_t g_t_cambio_mod = 0;
+
+        bool     g_captura_mantenido = false;   // true mientras el pin sigue en LOW
+        uint32_t g_t_presion_captura = 0;
+        bool     g_captura_disparo_dormir = false; // evita disparar DORMIR mas de una vez por pulsacion
     }
 
     void iniciar() {
@@ -51,9 +57,32 @@ namespace perifericos {
         g_mod_estable = g_mod_candidata = modulacion_seleccionada();
     }
 
-    Edge leer_captura() { return g_captura.leer(); }
     Edge leer_replay()  { return g_replay.leer(); }
     Edge leer_jamming() { return g_jamming.leer(); }
+
+    AccionCaptura evaluar_captura() {
+        const Edge e = g_captura.leer();
+
+        if (e == Edge::PRESIONADO) {
+            g_captura_mantenido = true;
+            g_t_presion_captura = millis();
+            g_captura_disparo_dormir = false;
+        } else if (e == Edge::SOLTADO) {
+            g_captura_mantenido = false;
+            // Si ya disparo DORMIR mientras estaba mantenido, soltarlo despues no hace nada mas.
+            if (!g_captura_disparo_dormir) return AccionCaptura::DESCARTAR_Y_RECAPTURAR;
+            return AccionCaptura::NINGUNA;
+        }
+
+        // Sin esperar a que lo suelten: apenas se cumplen los 3 s mantenido, duerme.
+        if (g_captura_mantenido && !g_captura_disparo_dormir &&
+            millis() - g_t_presion_captura >= MANTENIDO_DORMIR_MS) {
+            g_captura_disparo_dormir = true;
+            return AccionCaptura::DORMIR;
+        }
+
+        return AccionCaptura::NINGUNA;
+    }
 
     radio::Modulation modulacion_seleccionada() {
         return (digitalRead(PIN_SW_MODULACION) == LOW) ? radio::Modulation::FSK2 : radio::Modulation::ASK_OOK;

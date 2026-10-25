@@ -20,7 +20,7 @@
 
 #include <Arduino.h>
 #include <avr/sleep.h>
-#include "config_control.h"
+#include "config_perifericos.h"
 #include "../../lib/radio_cc1101/src/radio_cc1101.h"
 
 // SCK, MISO, MOSI, CSN = SPI por hardware del UNO (D13, D12, D11, D10). GDO0 sin usar (ver arriba).
@@ -122,17 +122,28 @@ void loop() {
         return;
     }
 
-    // CAPTURA: presionarlo de nuevo, estando despierto, vuelve a dormir el nodo.
-    const perifericos::Edge captura = perifericos::leer_captura();
     if (estadoActual == EstadoInterceptor::DORMIDO) {
         // Mientras esta dormido, CAPTURA se atiende via interrupcion (ver entrarEnSleep).
         iniciarEscucha();
         return;
     }
-    if (captura == perifericos::Edge::PRESIONADO) {
+
+    // CAPTURA, estando despierto: pulsacion corta descarta lo capturado y vuelve a escuchar;
+    // mantenida 3 s duerme el nodo.
+    switch (perifericos::evaluar_captura()) {
+    case perifericos::AccionCaptura::DORMIR:
         g_hay_trama = false;
         entrarEnSleep();
         return;
+    case perifericos::AccionCaptura::DESCARTAR_Y_RECAPTURAR:
+        Serial.println(F("[CAPTURA] Descartando trama, volviendo a escuchar..."));
+        g_hay_trama = false;
+        radio::rx_start();
+        estadoActual = EstadoInterceptor::ESCUCHANDO;
+        ultimoTiempoActividad = millis();
+        break;
+    case perifericos::AccionCaptura::NINGUNA:
+        break;
     }
 
     // JAMMING: disponible en cualquier estado despierto. Mientras esta mantenido, transmite

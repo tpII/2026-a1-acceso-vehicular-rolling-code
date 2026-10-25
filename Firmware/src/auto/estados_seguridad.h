@@ -19,6 +19,7 @@ struct EventoSeguridad {
    int rssi; // Intensidad de la señal recibida (RSSI)
    String modulacion; // Tipo de modulación utilizada (ASK o FSK)
    EstadoValidacion estado; // Estado de validación de la trama
+   uint32_t timestamp_s; // Uptime del ESP32 (millis()/1000) en el momento del evento
 };
 
 #endif
