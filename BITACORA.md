@@ -409,7 +409,7 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
 </div>
 
 
-### **20/10/2026*
+### **20/10/2026**
 - ¿Qué se hizo?
    - Se probó el código del servomotor SG90 de forma independiente (entorno servo_test), confirmando que abre a 90° y cierra solo a los 3 segundos. Se continuó con las pruebas de Pytest y se agregó una foto de la prueba del servo. Se mejoró el responsive de la página web para que se vea bien en el celular. Se comenzó la incorporación del nodo emisor (llavero) al proyecto.
 - Próximo paso
@@ -430,7 +430,7 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
 - Próximo paso
    - Probar la comunicación completa entre emisor y receptor con el hardware armado.
 
-### **22/10/2026 **
+### **22/10/2026**
 - ¿Qué se hizo?
    - Nos reunimos en la facultad para probar la comunicación entre emisor y receptor con el hardware real.
 
