@@ -305,7 +305,7 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
    - Profundizar el desarrollo del código aplicando conceptos de "Deep Sleep" y "Wake-on-Radio" (WoR), en emisor y receptor respectivamente.
    
 
-### **Fecha 16/10/2026**
+#### **Fecha 16/10/2026**
 - ¿Qué se hizo?
    - Se mejoró la estructura del firmware: se pasó de un proyecto de PlatformIO por nodo a un único proyecto con tres entornos (llavero, auto y atacante), uno por nodo. Para programar un nodo alcanza con seleccionar el entorno correspondiente, y PlatformIO compila solo el código de esa placa.
    - Organización de las carpetas del proyecto:
@@ -335,7 +335,7 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
    - Funcionalidad del servomotor.
    - Estados de seguridad.
 
-### **Fecha 17/10/2026**
+#### **Fecha 17/10/2026**
 - ¿Qué se hizo?
    - Se completó el main.cpp del receptor (auto) con la configuración del CC1101, el Access Point, el servidor web y el WebSocket.
    - Se creó la librería radio_cc1101 en lib/. La configuración del CC1101 quedó separada del main.cpp en cc1101_config (perfil 2-FSK a 433,92 MHz, que ya habíamos probado, y perfil ASK/OOK). Las funciones de envío y recepción de tramas de 16 bytes están en radio_cc1101: la recepción informa el RSSI y el resultado del CRC de cada trama, y devuelve un resultado (trama válida, CRC incorrecto, longitud incorrecta o desborde de la FIFO). También se agregó rx_start_wor() para escuchar en bajo consumo con Wake-On-Radio (pendiente de validar con el hardware).
@@ -440,3 +440,23 @@ Si bien se realizaron modificaciones, el codigo todavia no funciona. Los módulo
 - Próximo paso
    - Seguir haciendo pruebas hasta dar con la configuración correcta.
 
+#### **29/10/2026**
+- ¿Qué se hizo?
+   - Se continuaron realizando ajustes y configuraciones asociadas a la comunicación entre el emisor y receptor, principalmente en la acción de sincronización
+
+- Problemas encontrados
+   - El emisor y receptor logran comunicarse correctamente mediante las dos modulaciones. Dicho cambio de modulación se realiza de manera correcta, el problema reside en el lapso de sincronización. Mientras que los nodos participes de la comunicación se estan sincronizando, el sistema toma la trama como positiva y habilita al servomotor, logrando asi desbloquear el acceso vehicular.
+     Lo que realmente debería suceder es que mientras las nodos se tratan de comunicar el sistema rechace las tramas para el acceso pero logre a su vez cambiar la modulación
+
+- Próximo paso
+  - Seguir buscando en los detalles del codigo. Encontrar cual linea o líneas de códigos estan infiriendo en la toma de esta decisión.
+
+#### **30/10/2026**
+- ¿Qué se hizo?
+   - Se realizaron pruebas conjuntas de emisor, receptor y servomotor para validar el funcionamiento correcto del sistema
+
+- Problemas encontrados
+   - Idem al día 29. La diferencia principal es que se añadieron lineas de debugeo para observar a traves del puerto serie y la web que es lo que esta sucediendo para poder resolverlo.
+
+- Próximo paso
+  - Continuar analizando el código e ir probando distintas alternativas de debug hasta encontrar la solución.
